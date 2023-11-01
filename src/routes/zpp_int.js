@@ -18,6 +18,7 @@ router.get('/count',zpp_int.getZpp_IntsCount)
 router.get('/range&limit=:limit?&offset=:offset',zpp_int.getZpp_IntsByLimitAndOffset)
 router.get('/id/:id',zpp_int.getZpp_Int)
 router.post('/create',zpp_int.createZpp_Int)
+router.post('/createAll',zpp_int.createAllZpp_Int)
 router.put('/update',zpp_int.updateZpp_Int)
 router.delete('/delete/:id', zpp_int.deleteZpp_Int)
 

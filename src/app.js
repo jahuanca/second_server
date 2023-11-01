@@ -77,6 +77,7 @@ const actualizacion_datos=require('./controllers/actualizacion_datos')
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 const fs = require('fs');
+const { sincronizarZpp_Int } = require('./controllers/sincronizar_datos')
 const basename = path.basename(__filename);
 
 fs
@@ -113,8 +114,8 @@ http.listen(config.port, () => {
 })
 
 
-/*cron.schedule('14 0 * * *', () => {
-  actualizacion_datos.actualizarDeudores();
+/*cron.schedule('* * * * 0', () => {
+  sincronizarZpp_Int()
 });*/
 
 function get(promise) {

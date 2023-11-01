@@ -1,5 +1,6 @@
 'use strict'
 const models = require('../models')
+const { sincronizarViaje } = require('./sincronizar_datos')
 
 async function getConclusionsCount(req, res) {
     let [err, conclusions] = await get(models.Conclusion.count({
@@ -23,8 +24,8 @@ async function getConclusionsByLimitAndOffset(req, res) {
 
 async function getConclusions(req, res) {
     let [err, conclusions] = await get(models.Conclusion.findAll({
-        where: { estado: 'A' },
-        include: [{ all: true }]
+
+        include: [{ model: models.Zpp_Int, where: { estado: 'A' }, required: false }]
     }))
     if (err) return res.status(500).json({ message: `${err}` })
     if (conclusions == null) return res.status(404).json({ message: `Conclusions nulos` })
@@ -43,13 +44,18 @@ async function getConclusion(req, res) {
 }
 
 async function createConclusion(req, res) {
-    console.log(req.body.CODVIAJE);
+    let conclusionLast={}
     let [errBusqueda, busqueda] = await get(
         models.Conclusion.findAll({
-            where: { id: req.body.CODVIAJE },
+            where: {
+                PLACAVEHICULO: req.body.PLACAVEHICULO,
+                FECHA: req.body.FECHA,
+                IDUSUCREA: req.body.IDUSUCREA,
+                ESTADO: 'A',
+            },
         })
     )
-    if (err) return res.status(500).json({ message: `${err}` })
+    if (errBusqueda) return res.status(500).json({ message: `${errBusqueda}` })
     if (busqueda.length > 0) {
         let [err, conclusion] = await get(models.Conclusion.update({
             IDVIAJE: req.body.IDVIAJE,
@@ -63,26 +69,36 @@ async function createConclusion(req, res) {
             HORALLEGADA: req.body.HORALLEGADA,
             HORADESPACHO: req.body.HORADESPACHO,
             HORASALIDA: req.body.HORASALIDA,
-            LUGARLLEGADA: req.body.LUGARLLEGADA,
-            LUGARDESPACHO: req.body.LUGARDESPACHO,
-            LUGARSALIDA: req.body.LUGARSALIDA,
+            LUGARLLEGADA: (req.body.LUGARLLEGADA).substring(0,19),
+            LUGARDESPACHO: (req.body.LUGARDESPACHO).substring(0,19),
+            LUGARSALIDA: (req.body.LUGARSALIDA).substring(0,19),
+            ESTADO: 'C',
 
             accion: 'I',
-            accion_usuario: 'Creo un nuevo conclusion.',
+            accion_usuario: 'Modifico un nuevo conclusion.',
             ip: req.ip,
             usuario: 0
         }, {
             where: {
-                CODVIAJE: req.body.CODVIAJE,
-            }
+                PLACAVEHICULO: req.body.PLACAVEHICULO,
+                FECHA: req.body.FECHA,
+                IDUSUCREA: req.body.IDUSUCREA,
+                ESTADO: 'A',
+            },
+            individualHooks: true,
+            validate: false
         }))
+        console.log("modificado")
+        console.log(err)
         if (err) return res.status(500).json({ message: `${err}` })
         if (conclusion == null) return res.status(404).json({ message: `Conclusions nulos` })
+        await sincronizarViaje(conclusion[1][0]);
+        conclusionLast=conclusion[1][0]
+        
     } else {
         let [err, conclusion] = await get(models.Conclusion.create({
             IDVIAJE: req.body.IDVIAJE,
             CODVIAJE: req.body.CODVIAJE,
-            ESTADO: req.body.ESTADO,
             PLACAVEHICULO: req.body.PLACAVEHICULO,
             FECHA: req.body.FECHA,
             FECHACREACION: req.body.FECHACREACION,
@@ -92,18 +108,34 @@ async function createConclusion(req, res) {
             HORALLEGADA: req.body.HORALLEGADA,
             HORADESPACHO: req.body.HORADESPACHO,
             HORASALIDA: req.body.HORASALIDA,
-            LUGARLLEGADA: req.body.LUGARLLEGADA,
-            LUGARDESPACHO: req.body.LUGARDESPACHO,
-            LUGARSALIDA: req.body.LUGARSALIDA,
+            LUGARLLEGADA: (req.body.LUGARLLEGADA).substring(0,19),
+            LUGARDESPACHO: (req.body.LUGARDESPACHO).substring(0,19),
+            LUGARSALIDA: (req.body.LUGARSALIDA).substring(0,19),
+            ESTADO: 'C',
 
             accion: 'I',
-            accion_usuario: 'Creo un nuevo conclusion.',
+            accion_usuario: 'Creo una nuevo conclusion.',
             ip: req.ip,
             usuario: 0
         }))
+        console.log("creado")
+        console.log(err)
         if (err) return res.status(500).json({ message: `${err}` })
         if (conclusion == null) return res.status(404).json({ message: `Conclusions nulos` })
+        //await sincronizarViaje(conclusion);
+        conclusionLast=conclusion
     }
+
+    return res.status(200).json({
+        'SUCCESS': "1",
+        'IDRECEPCION': conclusionLast.id,
+        'USER_SAP': 'local',
+        'FECHA_TRANSF': Date(),
+        'HORA_TRANSF': Date(),
+        'ESTADO': 'Enviado al segundo servidor',
+        'MENSAJE': 'Este dato fue enviado al segundo servidor',
+    })
+
     res.status(200).json({
         'SUCCESS': 0,
         'IDRECEPCION': -1,
@@ -126,7 +158,7 @@ async function updateConclusion(req, res) {
         usuario: 0
     }, {
         where: {
-            id: req.body.id, estado: 'A'
+            id: req.body.id, ESTADO: 'A'
         },
         individualHooks: true,
         validate: false
@@ -139,7 +171,7 @@ async function updateConclusion(req, res) {
 
 async function deleteConclusion(req, res) {
     let [err, conclusion] = await get(models.Conclusion.update({
-        estado: 'I',
+        ESTADO: 'I',
 
         accion_usuario: 'Elimino un conclusion.',
         accion: 'D',

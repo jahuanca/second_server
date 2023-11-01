@@ -1,5 +1,6 @@
 'use strict'
 const models = require('../models')
+const sincronizar = require('./sincronizar_datos')
 
 async function getZpp_IntsCount(req, res) {
     let [err, zpp_ints] = await get(models.Zpp_Int.count({
@@ -23,7 +24,10 @@ async function getZpp_IntsByLimitAndOffset(req, res) {
 
 async function getZpp_Ints(req, res) {
     let [err, zpp_ints] = await get(models.Zpp_Int.findAll({
-        
+        where: { estado: 'A' },
+        include: [{ all: true }]
+        /*attributes: ['FECHARECEPCION', 'PLACAVEHICULO', 'IDRECEPCION'],
+        group: ['Zpp_Int.FECHARECEPCION', 'PLACAVEHICULO']*/
     }))
     if (err) return res.status(500).json({ message: `${err}` })
     if (zpp_ints == null) return res.status(404).json({ message: `Zpp_Ints nulos` })
@@ -42,20 +46,24 @@ async function getZpp_Int(req, res) {
 }
 
 async function createZpp_Int(req, res) {
-    console.log(req.body);
     const t = await models.sequelize.transaction();
+    let detalles = JSON.parse(req.body.data)
     try {
-        const concluido = await models.Conclusion.create({
+        const conclusion = await models.Conclusion.create({
             accion: 'I',
             accion_usuario: 'Creo un nuevo conclusion.',
+            PLACAVEHICULO: detalles[0].placavehiculo,
+            FECHA: req.body.fecha,
+            IDUSUCREA: detalles[0].usuariomod,
+            ESTADO: 'A',
             ip: req.ip,
             usuario: 0
 
         }, { transaction: t });
 
         let elementos = [];
-        for (let i = 0; i < req.body.length; i++) {
-            const element = req.body[i];
+        for (let i = 0; i < detalles.length; i++) {
+            const element = detalles[i];
             elementos.push(
                 {
                     DESCARGA: element.descarga,
@@ -78,7 +86,7 @@ async function createZpp_Int(req, res) {
                     IDTIPOJABA: element.idtipojaba,
                     IDTIPODOCU: element.idtipodocu,
                     IDDESTINO: element.iddestino,
-                    IDVIAJE: concluido.id,
+                    idConclusion: conclusion.id,
                     IDTRAZABILIDAD: element.idtrazabilidad,
                     NUMERODOCUMENTO: element.numerodocumento,
                     NUMEROACOPIO: element.Numeroacopio,
@@ -101,19 +109,20 @@ async function createZpp_Int(req, res) {
             )
         }
         let [err, zpp_int] = await get(models.Zpp_Int.bulkCreate(elementos, { transaction: t }))
-        if (err){
-            console.log('Error '+ err)
+        if (err) {
+            console.log('Error ' + err)
             await t.rollback();
             return res.status(500).json({ message: `${err}` })
         }
-        if (zpp_int == null){
+        if (zpp_int == null) {
             await t.rollback();
             return res.status(404).json({ message: `Zpp_Ints nulos` })
         }
         await t.commit();
+        //await sincronizar.sincronizarDetalles(zpp_int, conclusion.id);
         res.status(200).json({
             'SUCCESS': "0",
-            'IDRECEPCION': concluido.id,
+            'IDRECEPCION': conclusion.id,
             'USER_SAP': 'local',
             'FECHA_TRANSF': Date(),
             'HORA_TRANSF': Date(),
@@ -124,10 +133,104 @@ async function createZpp_Int(req, res) {
     } catch (error) {
         await t.rollback();
         console.log(error)
-        res.status(500).json({
-            'SUCCESS': "1",
+        return res.status(200).json({
+            'SUCCESS': "0",
+            'ESTADO': 'No se pudo registrar',
+            'MENSAJE': 'Este dato fue enviado al segundo servidor',
+            'USER_SAP': 'local',
+            'FECHA_TRANSF': Date(),
+            'HORA_TRANSF': Date(),
         })
     }
+}
+
+
+async function createAllZpp_Int(req, res) {
+    let data = JSON.parse(req.body.data)
+    let elementos = []
+    for (let i = 0; i < data.length; i++) {
+        const element = data[i];
+        elementos.push(
+            {
+                DESCARGA: element.descarga,
+                HORAENTREGA: element.horaentrega,
+                SALIDAPACKING: element.salidaPacking,
+                LUGARENTREGA: element.lugarentrega,
+                LUGARDESPACHO: element.lugardespacho,
+                LUGARSALIDA: element.lugarsalida,
+                ESTADO: element.estado,
+                ID: element.id,
+                GUIA_RM: element.guia_rm,
+                IDFUNDO: element.idfundo,
+                IDETAPA: element.idetapa,
+                IDCAMPO: element.idcampo,
+                IDTURNO: element.idturno,
+                IDFORMATO: element.idformato,
+                IDCULTIVO: element.idcultivo,
+                IDVARIEDAD: element.idvariedad,
+                IDTIPOETIQ: element.idtipoetiq,
+                IDTIPOJABA: element.idtipojaba,
+                IDTIPODOCU: element.idtipodocu,
+                IDDESTINO: element.iddestino,
+                IDVIAJE: 14,
+                IDCONCLUSION: 14,
+                IDTRAZABILIDAD: element.idtrazabilidad,
+                NUMERODOCUMENTO: element.numerodocumento,
+                NUMEROACOPIO: element.Numeroacopio,
+                PLACAVEHICULO: element.placavehiculo,
+                CANTIDADJABAS: element.cantidadjabas,
+                FECHARECEPCION: element.fecharecepcion,
+                FECHAMOD: element.fechamod,
+                USUARIOMOD: element.usuariomod,
+                USUARIORECEPCION: element.usuariorecepcion,
+                HORASMMOVILIDAD: element.horaSmMovilidad,
+                HORA_SM_CAMPO: element.hora_sm_campo,
+                HORA_SM_PACKING: element.hora_sm_packing,
+                PRODUCTOR: element.productor,
+
+                accion: 'I',
+                accion_usuario: 'Creo un nuevo zpp_int.',
+                ip: req.ip,
+                usuario: 0
+            }
+        )
+    }
+    let [err, zpp_int] = await get(models.Zpp_Int.bulkCreate(elementos))
+
+    if (err) {
+        console.log('Error ' + err)
+        return res.status(500).json({ message: `${err}` })
+    }
+    if (zpp_int == null) {
+        return res.status(404).json({
+            'SUCCESS': "0",
+            'ESTADO': 'No se pudo registrar',
+            'MENSAJE': 'Este dato fue enviado al segundo servidor',
+            'USER_SAP': 'local',
+            'FECHA_TRANSF': Date(),
+            'HORA_TRANSF': Date(),
+        })
+    }
+
+    return res.status(200).json({
+        'SUCCESS': "1",
+        'ESTADO': 'No se pudo registrar',
+        'MENSAJE': 'Este dato fue enviado al segundo servidor',
+        'USER_SAP': 'local',
+        'FECHA_TRANSF': Date(),
+        'HORA_TRANSF': Date(),
+    })
+
+    res.status(200).json({
+        'SUCCESS': "0",
+        'IDRECEPCION': conclusion.id,
+        'USER_SAP': 'local',
+        'FECHA_TRANSF': Date(),
+        'HORA_TRANSF': Date(),
+        'ESTADO': 'Registrado',
+        'MENSAJE': 'Este dato fue enviado al segundo servidor',
+    })
+
 }
 
 
@@ -186,6 +289,7 @@ module.exports = {
     getZpp_Ints,
     getZpp_Int,
     createZpp_Int,
+    createAllZpp_Int,
     updateZpp_Int,
     deleteZpp_Int
 }

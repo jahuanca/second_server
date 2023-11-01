@@ -5,11 +5,10 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class Zpp_Int extends Model {
     static associate(models) {
-      
+      Zpp_Int.belongsTo(models.Conclusion, {foreignKey: 'idConclusion'})
     }
   };
   Zpp_Int.init({
-    IDRECEPCION: {type: DataTypes.INTEGER, allowNull: true, primaryKey: true},
     IDFUNDO: {type: DataTypes.STRING(4), allowNull: true},
     IDETAPA: {type: DataTypes.STRING(4), allowNull: true},
     IDCAMPO: {type: DataTypes.STRING(4), allowNull: true},
@@ -23,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
     IDTIPODOCU: {type: DataTypes.STRING(4), allowNull: true},
     IDDESTINO: {type: DataTypes.STRING(4), allowNull: true},
     IDVIAJE: {type: DataTypes.INTEGER, allowNull: true},
+    idConclusion: {type: DataTypes.INTEGER, allowNull: true},
     IDTRAZABILIDAD: {type: DataTypes.STRING(200), allowNull: true},
     PRODUCTOR: {type: DataTypes.STRING(200), allowNull: true},
     NUMERODOCUMENTO: {type: DataTypes.STRING(200), allowNull: true},

@@ -1,15 +1,14 @@
 const r=require('../services/request')
 const rutas=require('./../rutas')
 const models= require('./../models')
+const { sincronizarZpp_Int, sincronizarAll } = require('./sincronizar_datos')
 
 const headersODATA={
-    //QAS
-    //'Authorization': 'Basic bnNvc2E6TmVzdG9yLjIwMjI=',
-    //'Cookie': 'SAP_SESSIONID_PRD_300=Auei246wSKx843wANOONqSsJcr1jMBHulIgS4t7kLGU%3d; sap-usercontext=sap-client=300'
-    //PRD 
-    'Authorization': 'Basic SU5URVJGQVpfUklTOkFndkAyMDIzJCsr',
-    'Cookie': 'SAP_SESSIONID_PRD_300=MKVebBUtEchKzv1Ze-3FmMIrGwNn7RHukT8SUjKyrPM%3d; Path=/; Secure; HttpOnly;'
-
+    'authorization': rutas.auth,
+    'cookie': rutas.cookie,
+    'accept': 'application/json',
+    'content-type': 'application/json',
+    'User-Agent': 'Mozilla/5.0',
 }
 
 module.exports={
@@ -49,10 +48,13 @@ async function llenarAll(){
     await llenarJaba();
     await llenarFormato();
     console.log('Terminado.')
+    await sincronizarAll();
 }
 
 async function deleteAll(){
     try {
+        /*await models.Zpp_Int.destroy({where: {}})
+        await models.Conclusion.destroy({where: {}})*/
         await models.Formato.destroy({where: {}})
         await models.Jaba.destroy({where: {}})
         await models.Destino.destroy({where: {}})

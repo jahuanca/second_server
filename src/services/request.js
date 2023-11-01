@@ -27,6 +27,7 @@ async function get(url, headers) {
 }*/
 
 async function post(url, form, headers) {
+  //console.log('Body: \n \n'+ JSON.stringify(form)+ "\n \n")
   return new Promise((resolve, reject) => {
     request.post({
       url,
