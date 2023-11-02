@@ -77,7 +77,6 @@ const actualizacion_datos=require('./controllers/actualizacion_datos')
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 const fs = require('fs');
-const { sincronizarZpp_Int } = require('./controllers/sincronizar_datos')
 const basename = path.basename(__filename);
 
 fs
@@ -110,7 +109,6 @@ app.set('trust proxy', true);
 
 http.listen(config.port, () => {
   console.log(`API REST: corriendo en el puerto: ${config.port}`)
-  actualizacion_datos.llenarAll();
 })
 
 

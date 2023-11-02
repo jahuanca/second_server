@@ -1,6 +1,6 @@
 const r = require('../services/request')
-const rutas = require('./../rutas')
-const models = require('./../models')
+const rutas = require('../rutas')
+const models = require('../models')
 
 
 module.exports = {
@@ -9,7 +9,7 @@ module.exports = {
     sincronizarViaje,
 }
 
-async function sincronizarAll() {
+async function sincronizarAll(req, res) {
     let [err, concluidos] = await get(models.Conclusion.findAll({
         where: {
             ESTADO: {
@@ -20,11 +20,17 @@ async function sincronizarAll() {
     }))
     if (err){
         console.log(`Error al consultar datos de ZPP_INT:  ${err}`);
-        return
+        return res.status(200).json({
+            succes: false,
+            message: `Error al consultar datos de ZPP_INT:  ${err}`
+        })
     }
     if (concluidos.length == 0){
         console.log('No existen viajes por migrar')
-        return
+        return res.status(200).json({
+            succes: true,
+            message: `No existen viajes por migrar`
+        })
     }
     try {
         for (let i = 0; i < concluidos.length; i++) {
@@ -36,18 +42,37 @@ async function sincronizarAll() {
                     elements.push(element)
                 }
             }
-            if(elements.length > 0) await sincronizarDetalles(elements, concluido.id)
+            if(elements.length > 0){
+                let resultado= (await sincronizarDetalles(elements, concluido.id))
+                if(!resultado) return res.status(200).json({
+                    succes: false,
+                    message: `Ocurrio un error al sincronizar los detalles.`
+                })
+            }
             delete concluido.dataValues.Zpp_Ints
             if (concluido.dataValues.ESTADO == 'C') {
-                await sincronizarViaje(concluido)
+                let resultado= await sincronizarViaje(concluido)
+                if(!resultado) return res.status(200).json({
+                    succes: false,
+                    message: `Ocurrio un error al sincronizar el viaje.`
+                })
             }
         }
+        return res.status(200).json({
+            succes: true,
+            message: `Exito al migrar.`
+        })
     } catch (e) {
         console.log(`Error ${e}`);
+        return res.status(200).json({
+            succes: false,
+            message: `Error general ${e}`
+        })
     }
 }
 
 async function sincronizarDetalles(elements, id) {
+    console.log('detalles')
     let headersDetalles = {
         'authorization': rutas.auth,
         'cookie': rutas.cookie,
@@ -72,7 +97,10 @@ async function sincronizarDetalles(elements, id) {
                         idConclusion: id
                     }
                 }))
-                if (errZppInt) console.log(`Hubo un error al actualizar los detalles: ${errZppInt}`)
+                if (errZppInt){
+                    console.log(`Hubo un error al actualizar los detalles: ${errZppInt}`) 
+                }
+                console.log('exito')
                 return true;
             } else {
                 console.log(`POST detalles: Error ${result.response.statusCode}`)

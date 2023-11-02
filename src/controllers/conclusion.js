@@ -1,6 +1,6 @@
 'use strict'
 const models = require('../models')
-const { sincronizarViaje } = require('./sincronizar_datos')
+const { sincronizarViaje } = require('./sincronizar')
 
 async function getConclusionsCount(req, res) {
     let [err, conclusions] = await get(models.Conclusion.count({
@@ -122,7 +122,7 @@ async function createConclusion(req, res) {
         console.log(err)
         if (err) return res.status(500).json({ message: `${err}` })
         if (conclusion == null) return res.status(404).json({ message: `Conclusions nulos` })
-        //await sincronizarViaje(conclusion);
+        await sincronizarViaje(conclusion);
         conclusionLast=conclusion
     }
 

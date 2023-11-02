@@ -1,6 +1,6 @@
 'use strict'
 const models = require('../models')
-const sincronizar = require('./sincronizar_datos')
+const sincronizar = require('./sincronizar')
 
 async function getZpp_IntsCount(req, res) {
     let [err, zpp_ints] = await get(models.Zpp_Int.count({
@@ -119,7 +119,7 @@ async function createZpp_Int(req, res) {
             return res.status(404).json({ message: `Zpp_Ints nulos` })
         }
         await t.commit();
-        //await sincronizar.sincronizarDetalles(zpp_int, conclusion.id);
+        await sincronizar.sincronizarDetalles(zpp_int, conclusion.id);
         res.status(200).json({
             'SUCCESS': "0",
             'IDRECEPCION': conclusion.id,
