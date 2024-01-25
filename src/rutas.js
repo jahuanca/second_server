@@ -12,6 +12,7 @@ const auth={
 
 const cookie={
     'prd': 'SAP_SESSIONID_PRD_300=MKVebBUtEchKzv1Ze-3FmMIrGwNn7RHukT8SUjKyrPM%3d; Path=/; Secure; HttpOnly;',
+    //'qas': 'sap-XSRF_QAS_300=2rCzBzx017OBJVZmMbBXPg%3d%3d20240125035040tEaP3O-rocRuaU6NzlOS8CRzpn28J1w4huJdkA91mHQ%3d; sap-usercontext=sap-client%3D300',
     'qas': 'SAP_SESSIONID_QAS_300=g8pB-Le6OyA7nURHXa9ilRdANotynhHupEsS4t7kLGU%3d; sap-usercontext=sap-client=300'
 }
 

@@ -75,7 +75,7 @@ async function sincronizarDetalles(elements, id) {
     console.log('detalles')
     let headersDetalles = {
         'authorization': rutas.auth,
-        'cookie': rutas.cookie,
+        //'cookie': rutas.cookie,
         'accept': 'application/json',
         'content-type': 'application/json',
         'User-Agent': 'Mozilla/5.0',
@@ -119,7 +119,7 @@ async function sincronizarDetalles(elements, id) {
 async function sincronizarViaje(conclusion) {
     let headersConcluido = {
         'authorization': rutas.auth,
-        'cookie': rutas.cookie,
+        //'cookie': rutas.cookie,
         'accept': 'application/json',
         'content-type': 'application/json',
         'User-Agent': 'Mozilla/5.0',
